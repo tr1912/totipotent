@@ -1,0 +1,27 @@
+server:
+  port: ${config.port}
+  servlet:
+    context-path: /
+spring:
+  profiles:
+    active: dev
+  freemarker:
+    cache: false
+    charset: utf-8
+    content-type: text/html
+    enabled: true
+    expose-request-attributes: true
+    request-context-attribute: request
+    settings:
+      classic_compatible: true
+      datetime_format: yyyy-MM-dd HH:mm:ss
+      number_format: 0.##########
+      template_exception_handler: ignore
+      template_update_delay: 0
+    suffix: .ftl
+    template-loader-path: classpath:/templates/
+    templateEncoding: UTF-8
+    allow-request-override: true
+  aop:
+    auto: true
+    proxy-target-class: false
