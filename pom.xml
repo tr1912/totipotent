@@ -19,6 +19,7 @@
         <module>toti-dubbo-api-impl</module>
         <module>toti-dubbo-service</module>
         <module>toti-multy-src</module>
+        <module>toti-job</module>
     </modules>
 
     <properties>

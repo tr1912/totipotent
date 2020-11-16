@@ -1,5 +1,6 @@
 package com.wx.lab.view;
 
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
@@ -10,7 +11,8 @@ import org.springframework.context.annotation.ComponentScan;
  * @projectname totipotent
  */
 @SpringBootApplication
-@ComponentScan(basePackages = {"com.wx.lab"})
+@MapperScan(basePackages = {"com.wx.lab.view.mapper"})
+@ComponentScan(basePackages = {"com.wx.lab.view"})
 public class TotiViewApplication {
 
     public static void main(String[] args) {

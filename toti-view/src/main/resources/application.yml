@@ -25,3 +25,9 @@ spring:
   aop:
     auto: true
     proxy-target-class: false
+
+mybatis-plus:
+  mapper-locations: classpath:/mappers/**Mapper.xml
+  type-aliases-package: com.wx.lab.view.po
+  configuration:
+    map-underscore-to-camel-case: true
