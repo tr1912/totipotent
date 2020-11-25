@@ -12,7 +12,6 @@ import org.springframework.context.annotation.ComponentScan;
  */
 @SpringBootApplication
 @MapperScan(basePackages = {"com.wx.lab.view.mapper"})
-@ComponentScan(basePackages = {"com.wx.lab.view"})
 public class TotiViewApplication {
 
     public static void main(String[] args) {

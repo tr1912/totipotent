@@ -1,8 +1,8 @@
 package com.wx.lab.view.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.wx.lab.view.po.ParamInfo;
 import com.wx.lab.view.mapper.ParamInfoMapper;
+import com.wx.lab.view.po.ParamInfo;
 import com.wx.lab.view.service.ParamInfoService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +29,8 @@ public class ParamInfoServiceImpl extends ServiceImpl<ParamInfoMapper, ParamInfo
 
     @Override
     public void insertParam(ParamInfo paramInfo) {
-        paramInfoMapper.insertParam(paramInfo);
+        // paramInfoMapper.insertParam(paramInfo);
+        paramInfoMapper.insert(paramInfo);
     }
 
 }

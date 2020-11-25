@@ -4,7 +4,8 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import com.wx.lab.view.service.impl.RuleEngineServiceImpl
 import com.wx.lab.view.entity.QueryParam;
-import com.wx.lab.view.entity.RuleResult;
+import com.wx.lab.view.entity.RuleResult
+import com.wx.lab.view.service.impl.RuleEngineServiceImpl;
 dialect  "java"
 rule "paramcheck1"
     salience 99
