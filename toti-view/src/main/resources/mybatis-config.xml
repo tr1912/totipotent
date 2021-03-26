@@ -1,0 +1,4 @@
+<plugins>
+    <plugin interceptor="com.wx.lab.view.plugin.ExamplePlugin">
+    </plugin>
+</plugins>

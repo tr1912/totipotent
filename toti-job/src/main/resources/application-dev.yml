@@ -1,2 +1,9 @@
 config:
   port: 8081
+dubbo:
+  application:
+    id: toti-job
+    name: toti-job
+  registry:
+    address: 127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183
+    protocol: zookeeper

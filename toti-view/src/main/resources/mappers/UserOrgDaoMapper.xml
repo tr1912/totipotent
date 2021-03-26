@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wx.lab.view.mapper.UserOrgMapper">
+
+    <resultMap type="com.wx.lab.view.po.UserOrg" id="UserOrgMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="code" column="code" jdbcType="VARCHAR"/>
+        <result property="name" column="name" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="yn" column="yn" jdbcType="INTEGER"/>
+        <result property="orgCode" column="org_code" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!--查询单个-->
+    <select id="queryById" resultMap="UserOrgMap">
+        select
+          id, code, name, create_time, yn, org_code
+        from rule-engine.user_org
+        where id = #{id}
+    </select>
+
+    <!--查询指定行数据-->
+    <select id="queryAllByLimit" resultMap="UserOrgMap">
+        select
+          id, code, name, create_time, yn, org_code
+        from rule-engine.user_org
+        limit #{offset}, #{limit}
+    </select>
+
+    <!--通过实体作为筛选条件查询-->
+    <select id="queryAll" resultMap="UserOrgMap">
+        select
+        id, code, name, create_time, yn, org_code
+        from rule-engine.user_org
+        <where>
+            <if test="id != null">
+                and id = #{id}
+            </if>
+            <if test="code != null and code != ''">
+                and code = #{code}
+            </if>
+            <if test="name != null and name != ''">
+                and name = #{name}
+            </if>
+            <if test="createTime != null">
+                and create_time = #{createTime}
+            </if>
+            <if test="yn != null">
+                and yn = #{yn}
+            </if>
+            <if test="orgCode != null and orgCode != ''">
+                and org_code = #{orgCode}
+            </if>
+        </where>
+    </select>
+
+    <select id="showTables" resultType="java.lang.String">
+        show TABLES
+    </select>
+
+    <!--新增所有列-->
+    <insert id="insert" keyProperty="id" useGeneratedKeys="true">
+        insert into rule-engine.user_org(code, name, create_time, yn, org_code)
+        values (#{code}, #{name}, #{createTime}, #{yn}, #{orgCode})
+    </insert>
+
+    <insert id="insertBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into rule-engine.user_org(code, name, create_time, yn, org_code)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.code}, #{entity.name}, #{entity.createTime}, #{entity.yn}, #{entity.orgCode})
+        </foreach>
+    </insert>
+
+    <insert id="insertOrUpdateBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into rule-engine.user_org(code, name, create_time, yn, org_code)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.code}, #{entity.name}, #{entity.createTime}, #{entity.yn}, #{entity.orgCode})
+        </foreach>
+        on duplicate key update
+        code = values(code) , name = values(name) , create_time = values(create_time) , yn = values(yn) , org_code =
+        values(org_code)
+    </insert>
+
+    <insert id="insertByTable">
+        insert into ${tableName} (code, name, create_time, yn, org_code)
+        values (#{code}, #{name}, #{createTime}, #{yn}, #{orgCode})
+    </insert>
+
+    <!--通过主键修改数据-->
+    <update id="update">
+        update rule-engine.user_org
+        <set>
+            <if test="code != null and code != ''">
+                code = #{code},
+            </if>
+            <if test="name != null and name != ''">
+                name = #{name},
+            </if>
+            <if test="createTime != null">
+                create_time = #{createTime},
+            </if>
+            <if test="yn != null">
+                yn = #{yn},
+            </if>
+            <if test="orgCode != null and orgCode != ''">
+                org_code = #{orgCode},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <select id="showIsExsit" resultType="java.lang.String">
+        SHOW TABLES LIKE #{tableName}
+    </select>
+
+    <select id="showTableStruct" resultType="java.util.Map">
+        show create table ${tableName}
+    </select>
+
+    <update id="excute">
+        ${sql}
+    </update>
+
+    <!--通过主键删除-->
+    <delete id="deleteById">
+        delete from rule-engine.user_org where id = #{id}
+    </delete>
+
+</mapper>

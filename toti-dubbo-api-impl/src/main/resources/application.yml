@@ -1,0 +1,6 @@
+server:
+  port: 4001
+spring:
+  profiles:
+    active: dev
+

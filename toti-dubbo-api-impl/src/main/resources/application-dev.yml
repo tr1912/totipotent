@@ -1,0 +1,24 @@
+rocketmq:
+  name-server: 127.0.0.1:9876
+  producer:
+    group: toti-web
+    retry-times-when-send-async-failed: 5
+    retry-times-when-send-failed: 5
+  topic:
+    prefix: dev
+dubbo:
+  application:
+    id: toti-dubbo-service
+    name: toti-dubbo-service
+  protocol:
+    port: 30129
+    name: dubbo
+    id: dubbo
+  registry:
+    address: 127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183
+    protocol: zookeeper
+  consumer:
+    check: true
+    owner: wangxiao
+    timeout: 8000
+    retries: 3

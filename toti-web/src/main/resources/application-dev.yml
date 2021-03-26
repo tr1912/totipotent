@@ -1,2 +1,11 @@
 config:
   port: 8080
+
+rocketmq:
+  name-server: 127.0.0.1:9876
+  producer:
+    group: toti-web
+    retry-times-when-send-async-failed: 5
+    retry-times-when-send-failed: 5
+  topic:
+    prefix: dev
