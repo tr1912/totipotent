@@ -18,8 +18,8 @@ public class KieUtils {
         return kieContainer;
     }
 
-    public static void setKieContainer(KieContainer kieContainer) {
-        kieContainer = kieContainer;
+    public static void setKieContainer(KieContainer kieContainer1) {
+        kieContainer = kieContainer1;
         kieSession = kieContainer.newKieSession();
     }
 
