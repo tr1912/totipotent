@@ -1,7 +1,11 @@
 import com.alibaba.excel.util.CollectionUtils;
+import com.google.common.collect.Maps;
+import com.googlecode.aviator.AviatorEvaluator;
+import com.googlecode.aviator.Expression;
 import com.wx.lab.view.dto.MatchResultDTO;
 import com.wx.lab.view.dto.RegxPatternDTO;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.junit.Test;
 
@@ -18,15 +22,16 @@ import java.util.regex.Pattern;
 @Slf4j
 public class RegxTest {
 
+    private static final String REPLACE_RULE = "MG:mg,毫克:mg,KG:kg,千克:kg,G:g,克:g,ML:ml,毫升:ml,L:l,升:l,MM:mm,毫米:mm,CM:cm,厘米:cm,M:米,m:米,×:*,片:s,丸:s,粒:s";
+
     @Test
     public void testRegxMatch() {
         String agentMatchStr = "15mg*12片";
-        List<String> esMatchStrs = new ArrayList<>();
-        esMatchStrs.addAll(Arrays.asList(
+        List<String> esMatchStrs = new ArrayList<>(Arrays.asList(
                 "15mg*6s*2板",
-                "15mg*6s*3板",
-                "15mg*12s*2板",
-                "30mg*6s*1板",
+                "15G*6s*3板",
+                "15MG*12s*2板",
+                "30MG*6s*1板",
                 "75mg*7片/板*4板",
                 "75mg*7s*4板",
                 "400ml/盒",
@@ -43,50 +48,64 @@ public class RegxTest {
             assert flag;
             return;
         }
+
         Map<String, MatchResultDTO> stringMatcherMap = batchMatchBatch(esMatchStrs, patterns);
         // 所有匹配结果都为null，则失败
         if (stringMatcherMap.entrySet().stream().allMatch(m -> m.getValue() == null)) {
             assert flag;
             return;
         }
+        executeEl(matchResultDTO.getMatcher(), matchResultDTO.getPattern());
         for (Map.Entry<String, MatchResultDTO> stringMatcherEntry : stringMatcherMap.entrySet()) {
             if (stringMatcherEntry.getValue() != null) {
                 MatchResultDTO matchResult = stringMatcherEntry.getValue();
                 Matcher match = matchResult.getMatcher();
                 RegxPatternDTO pattern = matchResult.getPattern();
-                StringBuilder sb = new StringBuilder();
-
-                for (int i = 0; i < match.groupCount(); i++) {
-                    // 第一个不组合
-                    if (i == 0) {
-                        continue;
-                    }
-//                    if (i == match.groupCount()-1 && ma) {
-//                        continue;
-//                    }
-                    if (i == 4) {
-                        String base = match.group(i);
-                        String ratio = match.group(8);
-                        if (NumberUtils.isDigits(base) && NumberUtils.isDigits(ratio)) {
-                            Integer baseNum = Integer.valueOf(base);
-                            Integer ratioNum = Integer.valueOf(ratio);
-                            sb.append(baseNum * ratioNum);
-                        } else {
-                            if (base != null) {
-                                sb.append(base);
-                            }
-                        }
-                        continue;
-                    }
-                    String group = match.group(i);
-                    if (group != null) {
-                        sb.append(group);
-                    }
-                }
-
-                log.info(sb.toString());
+                executeEl(match, pattern);
             }
         }
+    }
+
+    /**
+     * 可以转换数值类型的转换数值类型
+     *
+     * @param group
+     * @return
+     */
+    private Object convertInteger(String group){
+        Map<String, String> productReplaceRuleMap = getProductReplaceRuleMap();
+        if (StringUtils.isEmpty(group)){
+            return "";
+        }
+        if (NumberUtils.isDigits(group)){
+            return Double.valueOf(group);
+        }
+        // 替换部分规定字符
+        for (Map.Entry<String, String> entry : productReplaceRuleMap.entrySet()) {
+            if (group.equals(entry.getKey())){
+                group = group.replaceAll(entry.getKey(), entry.getValue());
+            }
+        }
+        return group.toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * 执行el语句合并
+     *
+     * @param match
+     * @param pattern
+     * @return
+     */
+    private Object executeEl(Matcher match, RegxPatternDTO pattern){
+        // 提取参数
+        Map<String,Object> env = new HashMap<>();
+        for (int i = 1; i <= match.groupCount(); i++) {
+            env.put("a" + i,convertInteger(match.group(i)));
+        }
+        log.info("当前运算表达式：{}", pattern.getElExpression());
+        Object res = AviatorExecuteEl(pattern.getElExpression(), env);
+        log.info(match.group(0) + "=>" + res.toString());
+        return res;
     }
 
     /**
@@ -147,59 +166,43 @@ public class RegxTest {
      * @return
      */
     private List<RegxPatternDTO> getPatterns() {
-        List<RegxPatternDTO> patterns = new ArrayList<>();
-        patterns.addAll(Arrays.asList(
+        return new ArrayList<>(Arrays.asList(
                 RegxPatternDTO.builder()
                         .index(1)
                         .pattern("^(\\d+(\\.\\d+)?)(mg|g|MG|G)\\*([\\d]+)(s|S|片|粒|丸)(/(瓶|盒))?$")
-                        .baseNum(4)
-                        .ratioNum(8)
-                        .joinLast(false)
+                        .elExpression("'#{a3==\"g\"?a1*1000:a1}' + '#{a3==\"g\"?\"mg\":a3}*#{a4}#{a5}|' + '##'")
                         .build(),
                 RegxPatternDTO.builder()
                         .index(2)
                         .pattern("^(\\d+(\\.\\d+)?)(mg|g|MG|G)\\*([\\d]+)(s|S|片|粒|丸)(/(板))?\\*([\\d]+)(板)$")
-                        .baseNum(4)
-                        .ratioNum(8)
-                        .joinLast(false)
+                        .elExpression("'#{a3==\"g\"?a1*1000:a1}' + '#{a3==\"g\"?\"mg\":a3}*#{a4*a8}#{a5}|#{a8}#{a9}'")
                         .build(),
                 RegxPatternDTO.builder()
                         .index(3)
                         .pattern("^(\\d+(\\.\\d+)?)(mg|g|MG|G)\\*([\\d]+)(s|S|片|粒|丸)(/(袋))?\\*([\\d]+)(袋)$")
-                        .baseNum(4)
-                        .ratioNum(8)
-                        .joinLast(false)
+                        .elExpression("'#{a3==\"g\"?a1*1000:a1}' + '#{a3==\"g\"?\"mg\":a3}*#{a4*a8}#{a5}|#{a8}#{a9}'")
                         .build(),
                 RegxPatternDTO.builder()
                         .index(4)
                         .pattern("^([\\d]+)(s|S|片|粒|丸)$")
-                        .baseNum(1)
-                        .ratioNum(3)
-                        .joinLast(true)
+                        .elExpression("'#{a1}#{a2}|' + '##'")
                         .build(),
                 RegxPatternDTO.builder()
                         .index(5)
                         .pattern("^([\\d]+)(s|S|片|粒|丸)\\*([\\d]+)(板)$")
-                        .baseNum(1)
-                        .ratioNum(3)
-                        .joinLast(false)
+                        .elExpression("'#{a1*a3}#{a2}|#{a3}#{a4}'")
                         .build(),
                 RegxPatternDTO.builder()
                         .index(6)
                         .pattern("^([\\d]+)(s|S|片|粒|丸)\\*([\\d]+)(袋)$")
-                        .baseNum(1)
-                        .ratioNum(3)
-                        .joinLast(false)
+                        .elExpression("'#{a1*a3}#{a2}|#{a3}#{a4}'")
                         .build(),
                 RegxPatternDTO.builder()
                         .index(7)
                         .pattern("^(\\d+(\\.\\d+)?)(ml|ML|g|G)(/(盒|袋|瓶|支|罐))?$")
-                        .baseNum(1)
-                        .ratioNum(3)
-                        .joinLast(true)
+                        .elExpression("'#{a1}#{a3}'")
                         .build()
         ));
-        return patterns;
     }
 
     /**
@@ -214,10 +217,42 @@ public class RegxTest {
         Matcher m = r.matcher(target);
         System.out.println(m.matches());
         if (m.matches()) {
-            for (int i = 0; i < m.groupCount(); i++) {
+            for (int i = 0; i <= m.groupCount(); i++) {
                 log.info(m.group(i));
             }
         }
         return m;
+    }
+
+    /**
+     * 解析El语句
+     *
+     * @param el 语句
+     * @param ctx 环境变量
+     * @return
+     */
+    private Object AviatorExecuteEl(String el, Map<String, Object> ctx){
+        Expression exp = AviatorEvaluator.compile(el);
+        return exp.execute(ctx);
+    }
+
+    /**
+     * 获得替换分组
+     *
+     * @return
+     */
+    private Map<String, String> getProductReplaceRuleMap() {
+        if (StringUtils.isEmpty(REPLACE_RULE)) {
+            return Maps.newHashMap();
+        }
+        String[] ruleArray = REPLACE_RULE.split(",");
+        Map<String, String> ruleMap = Maps.newHashMap();
+        for (String ruleEntry : ruleArray) {
+            if (ruleEntry.contains(":")) {
+                String[] ruleEntryArray = ruleEntry.split(":");
+                ruleMap.put(ruleEntryArray[0], ruleEntryArray[1]);
+            }
+        }
+        return ruleMap;
     }
 }

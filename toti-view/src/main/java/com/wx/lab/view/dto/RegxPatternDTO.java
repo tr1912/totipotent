@@ -24,17 +24,8 @@ public class RegxPatternDTO {
     private String pattern;
 
     /**
-     * 基数位置
+     * el表达式
      */
-    private Integer baseNum;
+    private String elExpression;
 
-    /**
-     * 倍率位置
-     */
-    private Integer ratioNum;
-
-    /**
-     * 是否拼接最后一个字符
-     */
-    private boolean joinLast;
 }
