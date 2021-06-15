@@ -15,8 +15,8 @@ public class GlobalAsyncExceptionHandler implements AsyncUncaughtExceptionHandle
 
     @Override
     public void handleUncaughtException(Throwable ex, Method method, Object... params) {
-        log.error("[handleUncaughtException][method({}) params({}) 发生异常]",
-                method, params, ex);
+//        log.error("[handleUncaughtException][method({}) params({}) 发生异常]",
+//                method, params, ex);
     }
 
 }

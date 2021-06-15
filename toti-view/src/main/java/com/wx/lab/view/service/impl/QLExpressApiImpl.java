@@ -23,7 +23,7 @@ import java.util.List;
 @Service
 public class QLExpressApiImpl implements QLExpressApi {
 
-    @Value("${qlexpress.import.Class}")
+    // @Value("${qlexpress.import.Class}")
     String importClass;
 
     /**

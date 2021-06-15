@@ -1,14 +1,24 @@
 import com.alibaba.excel.util.CollectionUtils;
 import com.google.common.collect.Maps;
 import com.googlecode.aviator.AviatorEvaluator;
+import com.googlecode.aviator.AviatorEvaluatorInstance;
 import com.googlecode.aviator.Expression;
+import com.googlecode.aviator.Options;
+import com.googlecode.aviator.runtime.function.AbstractFunction;
+import com.googlecode.aviator.runtime.function.FunctionUtils;
+import com.googlecode.aviator.runtime.type.AviatorObject;
+import com.googlecode.aviator.runtime.type.AviatorString;
 import com.wx.lab.view.dto.MatchResultDTO;
 import com.wx.lab.view.dto.RegxPatternDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.junit.Before;
 import org.junit.Test;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -24,12 +34,19 @@ public class RegxTest {
 
     private static final String REPLACE_RULE = "MG:mg,毫克:mg,KG:kg,千克:kg,G:g,克:g,ML:ml,毫升:ml,L:l,升:l,MM:mm,毫米:mm,CM:cm,厘米:cm,M:米,m:米,×:*,片:s,丸:s,粒:s";
 
+    protected AviatorEvaluatorInstance instance;
+
+    @Before
+    public void setup() {
+        this.instance = AviatorEvaluator.newInstance();
+    }
+
     @Test
     public void testRegxMatch() {
         String agentMatchStr = "15mg*12片";
         List<String> esMatchStrs = new ArrayList<>(Arrays.asList(
                 "15mg*6s*2板",
-                "15G*6s*3板",
+                "15G*6.5s*3板",
                 "15MG*12s*2板",
                 "30MG*6s*1板",
                 "75mg*7片/板*4板",
@@ -72,20 +89,20 @@ public class RegxTest {
      * @param group
      * @return
      */
-    private Object convertInteger(String group){
+    private Object convertDigits(String group){
         Map<String, String> productReplaceRuleMap = getProductReplaceRuleMap();
         if (StringUtils.isEmpty(group)){
             return "";
         }
         if (NumberUtils.isDigits(group)){
-            return Double.valueOf(group);
+            return new BigDecimal(group).setScale(2, RoundingMode.HALF_UP);
         }
         // 替换部分规定字符
-        for (Map.Entry<String, String> entry : productReplaceRuleMap.entrySet()) {
-            if (group.equals(entry.getKey())){
-                group = group.replaceAll(entry.getKey(), entry.getValue());
-            }
-        }
+//        for (Map.Entry<String, String> entry : productReplaceRuleMap.entrySet()) {
+//            if (group.equals(entry.getKey())){
+//                group = group.replaceAll(entry.getKey(), entry.getValue());
+//            }
+//        }
         return group.toLowerCase(Locale.ROOT);
     }
 
@@ -100,7 +117,7 @@ public class RegxTest {
         // 提取参数
         Map<String,Object> env = new HashMap<>();
         for (int i = 1; i <= match.groupCount(); i++) {
-            env.put("a" + i,convertInteger(match.group(i)));
+            env.put("a" + i, convertDigits(match.group(i)));
         }
         log.info("当前运算表达式：{}", pattern.getElExpression());
         Object res = AviatorExecuteEl(pattern.getElExpression(), env);
@@ -175,12 +192,12 @@ public class RegxTest {
                 RegxPatternDTO.builder()
                         .index(2)
                         .pattern("^(\\d+(\\.\\d+)?)(mg|g|MG|G)\\*([\\d]+)(s|S|片|粒|丸)(/(板))?\\*([\\d]+)(板)$")
-                        .elExpression("'#{a3==\"g\"?a1*1000:a1}' + '#{a3==\"g\"?\"mg\":a3}*#{a4*a8}#{a5}|#{a8}#{a9}'")
+                            .elExpression("'#{a3==\"g\"?a1*1000:a1}' + '#{a3==\"g\"?\"mg\":a3}*#{setScale(a4*a8,2)}#{a5}|#{a8}#{a9}'")
                         .build(),
                 RegxPatternDTO.builder()
                         .index(3)
                         .pattern("^(\\d+(\\.\\d+)?)(mg|g|MG|G)\\*([\\d]+)(s|S|片|粒|丸)(/(袋))?\\*([\\d]+)(袋)$")
-                        .elExpression("'#{a3==\"g\"?a1*1000:a1}' + '#{a3==\"g\"?\"mg\":a3}*#{a4*a8}#{a5}|#{a8}#{a9}'")
+                        .elExpression("'#{a3==\"g\"?a1*1000:a1}' + '#{a3==\"g\"?\"mg\":a3}*#{setScale(a4*a8,2)}#{a5}|#{a8}#{a9}'")
                         .build(),
                 RegxPatternDTO.builder()
                         .index(4)
@@ -190,12 +207,12 @@ public class RegxTest {
                 RegxPatternDTO.builder()
                         .index(5)
                         .pattern("^([\\d]+)(s|S|片|粒|丸)\\*([\\d]+)(板)$")
-                        .elExpression("'#{a1*a3}#{a2}|#{a3}#{a4}'")
+                        .elExpression("'#{setScale(a1*a3,2)}#{a2}|#{a3}#{a4}'")
                         .build(),
                 RegxPatternDTO.builder()
                         .index(6)
                         .pattern("^([\\d]+)(s|S|片|粒|丸)\\*([\\d]+)(袋)$")
-                        .elExpression("'#{a1*a3}#{a2}|#{a3}#{a4}'")
+                        .elExpression("'#{setScale(a1*a3, 2)}#{a2}|#{a3}#{a4}'")
                         .build(),
                 RegxPatternDTO.builder()
                         .index(7)
@@ -232,7 +249,8 @@ public class RegxTest {
      * @return
      */
     private Object AviatorExecuteEl(String el, Map<String, Object> ctx){
-        Expression exp = AviatorEvaluator.compile(el);
+        this.instance.addFunction(new SetScaleFunction());
+        Expression exp = instance.compile(el);
         return exp.execute(ctx);
     }
 
@@ -255,4 +273,23 @@ public class RegxTest {
         }
         return ruleMap;
     }
+
+    static class SetScaleFunction extends AbstractFunction {
+        @Override
+        public AviatorObject call(Map<String, Object> env, AviatorObject inNum, AviatorObject scale) {
+            Number numberValue = FunctionUtils.getNumberValue(inNum, env);
+            Number scaleValue = FunctionUtils.getNumberValue(scale, env);
+            Double v = numberValue.doubleValue();
+            BigDecimal bd=new BigDecimal(v).setScale(scaleValue.intValue(), RoundingMode.HALF_UP);
+            //setScale(保留位数,BigDecimal.ROUND_HALF_UP) 四舍五入
+            //例如：setScale(1,BigDecimal.ROUND_HALF_UP) 如：2.33，则为2.3
+            return new AviatorString(bd.toString());
+        }
+
+        public String getName() {
+            return "setScale";
+        }
+    }
 }
+
+
