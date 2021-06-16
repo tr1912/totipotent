@@ -1,27 +1,36 @@
+import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.util.CollectionUtils;
 import com.google.common.collect.Maps;
 import com.googlecode.aviator.AviatorEvaluator;
 import com.googlecode.aviator.AviatorEvaluatorInstance;
 import com.googlecode.aviator.Expression;
-import com.googlecode.aviator.Options;
 import com.googlecode.aviator.runtime.function.AbstractFunction;
 import com.googlecode.aviator.runtime.function.FunctionUtils;
 import com.googlecode.aviator.runtime.type.AviatorObject;
 import com.googlecode.aviator.runtime.type.AviatorString;
+import com.wx.lab.view.config.ExcelListener;
 import com.wx.lab.view.dto.MatchResultDTO;
 import com.wx.lab.view.dto.RegxPatternDTO;
+import com.wx.lab.view.dto.PresentSpecDTO;
+import com.wx.lab.view.dto.RegxSpecDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.beans.BeanUtils;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * @author wangxiao
@@ -42,45 +51,177 @@ public class RegxTest {
     }
 
     @Test
-    public void testRegxMatch() {
-        String agentMatchStr = "15mg*12片";
-        List<String> esMatchStrs = new ArrayList<>(Arrays.asList(
-                "15mg*6s*2板",
-                "15G*6.5s*3板",
-                "15MG*12s*2板",
-                "30MG*6s*1板",
-                "75mg*7片/板*4板",
-                "75mg*7s*4板",
-                "400ml/盒",
-                "400ml",
-                "200丸",
-                "200s 浓缩丸",
-                "24粒",
-                "12s*2板"
-        ));
+    public void testDigit(){
+        String num = "0.35";
+        boolean digits = NumberUtils.isParsable(num);
+        log.info(digits + "");
+    }
+
+    private List<PresentSpecDTO> importExcel() throws FileNotFoundException {
+        String fileName = "D:\\新品上报匹配只有规格不一致的明细-模板.xlsx";
+        File file = new File(fileName);
+        InputStream in = new FileInputStream(file);
+        List<PresentSpecDTO> list = new ArrayList<>();
+        EasyExcelFactory.read(in, PresentSpecDTO.class, new ExcelListener<PresentSpecDTO>(list::addAll)).sheet().doRead();
+        return list;
+    }
+
+    @Test
+    public void testRegxMatch() throws FileNotFoundException {
         List<RegxPatternDTO> patterns = getPatterns();
-        MatchResultDTO matchResultDTO = singleMatchBatch(agentMatchStr, patterns);
+//        String agentMatchStr = "15mg*12片";
+//        MatchResultDTO matchResultDTO = singleMatchBatch(agentMatchStr, patterns);
         boolean flag = false;
-        if (matchResultDTO == null) {
+//        if (matchResultDTO == null) {
+//            assert flag;
+//            return;
+//        }
+//        List<String> esMatchStrs = new ArrayList<>(Arrays.asList(
+//                "15mg*6s*2板",
+//                "15G*6.5s*3板",
+//                "15MG*12s*2板",
+//                "30MG*6s*1板",
+//                "75mg*7片/板*4板",
+//                "75mg*7s*4板",
+//                "400ml/盒",
+//                "400ml",
+//                "200丸",
+//                "200s 浓缩丸",
+//                "24粒",
+//                "12s*2板"
+//        ));
+
+        List<PresentSpecDTO> importList = importExcel();
+        if (CollectionUtils.isEmpty(importList)){
+            return;
+        }
+        List<RegxSpecDTO> matchSpecs = importList.stream()
+                .filter(n->!StringUtils.isEmpty(n.getSpec()))
+                .map(m->{
+                    RegxSpecDTO regxSpecDTO = new RegxSpecDTO();
+                    regxSpecDTO.setId(m.getPresentId());
+                    regxSpecDTO.setSpec(m.getSpec());
+                    return regxSpecDTO;
+                })
+                .collect(Collectors.toList());
+        List<RegxSpecDTO> matchMSpecs = importList.stream()
+                .filter(n->!StringUtils.isEmpty(n.getMiddleSpec()))
+                .map(m->{
+                    RegxSpecDTO regxSpecDTO = new RegxSpecDTO();
+                    regxSpecDTO.setId(m.getPresentId());
+                    regxSpecDTO.setSpec(m.getMiddleSpec());
+                    return regxSpecDTO;
+                })
+                .collect(Collectors.toList());
+
+
+
+        Map<Integer, MatchResultDTO> stringMatchSpecMap = batchMatchBatch(matchSpecs, patterns);
+        Map<Integer, MatchResultDTO> stringMatchMSpecMap = batchMatchBatch(matchMSpecs, patterns);
+        // 所有匹配结果都为null，则失败
+        if (stringMatchSpecMap.entrySet().stream().allMatch(m -> m.getValue() == null)) {
             assert flag;
             return;
+        }
+        List<PresentSpecDTO> exportList = importList.stream()
+                .map(presentItem->{
+                    PresentSpecDTO specDTO = new PresentSpecDTO();
+                    BeanUtils.copyProperties(presentItem, specDTO);
+                    specDTO.setMatchMiddleSpec("");
+                    specDTO.setMatchSpec("");
+                    specDTO.setMatchPackageUnit("");
+                    MatchResultDTO specMatchRes = stringMatchSpecMap.get(presentItem.getPresentId());
+                    if (specMatchRes != null){
+                        Matcher matcher = specMatchRes.getMatcher();
+                        RegxPatternDTO pattern = specMatchRes.getPattern();
+                        Object spinSpec = executeEl(matcher, pattern.getElExpression());
+                        if (!org.springframework.util.StringUtils.isEmpty(spinSpec)){
+                            specDTO.setMatchSpec(spinSpec.toString());
+                        }
+                        Object spinPackageUnit = executeEl(matcher, pattern.getPackageUnitElExpress());
+                        if (!org.springframework.util.StringUtils.isEmpty(spinPackageUnit)){
+                            specDTO.setMatchPackageUnit(spinPackageUnit.toString());
+                        }
+                    }
+                    MatchResultDTO middleSpecMatchRes = stringMatchMSpecMap.get(presentItem.getPresentId());
+                    if (middleSpecMatchRes != null){
+                        Matcher matcher = middleSpecMatchRes.getMatcher();
+                        RegxPatternDTO pattern = middleSpecMatchRes.getPattern();
+                        Object spinSpec = executeEl(matcher, pattern.getElExpression());
+                        if (!org.springframework.util.StringUtils.isEmpty(spinSpec)){
+                            specDTO.setMatchMiddleSpec(spinSpec.toString());
+                        }
+                    }
+                    specDTO.setIsMatch(matchSpec(specDTO.getMatchSpec(), specDTO.getMatchMiddleSpec()));
+                    return specDTO;
+                })
+                .collect(Collectors.toList());
+
+        String outFileName = "D:\\新品上报匹配只有规格不一致的明细-匹配结果.xlsx";
+        EasyExcelFactory.write(outFileName, PresentSpecDTO.class).sheet("Sheet1").doWrite(exportList);
+//        executeEl(matchResultDTO.getMatcher(), matchResultDTO.getPattern());
+//        for (Map.Entry<Integer, MatchResultDTO> stringMatcherEntry : stringMatchSpecMap.entrySet()) {
+//            if (stringMatcherEntry.getValue() != null) {
+//                MatchResultDTO matchResult = stringMatcherEntry.getValue();
+//                Matcher match = matchResult.getMatcher();
+//                RegxPatternDTO pattern = matchResult.getPattern();
+//                executeEl(match, pattern.getElExpression());
+//                executeEl(match, pattern.getPackageUnitElExpress());
+//            }
+//        }
+    }
+
+    private boolean matchSpec(String spec,String middleSpec){
+        if (StringUtils.isEmpty(spec) || StringUtils.isEmpty(middleSpec)){
+            return false;
+        }
+        String[] specSplits = spec.split("\\|");
+        String[] middleSpecSplits = middleSpec.split("\\|");
+        int s = specSplits.length;
+        int j = middleSpecSplits.length;
+        int max = Math.max(s, j);
+        boolean flag = true;
+
+        for (int i = 0; i < max; i++) {
+            String str1 = i > (s-1)? specSplits[s-1] : specSplits[i];
+            String str2 = i > (j-1) ? middleSpecSplits[j -1]: middleSpecSplits[i];
+            flag = flag && partEquals(str1, str2);
         }
 
-        Map<String, MatchResultDTO> stringMatcherMap = batchMatchBatch(esMatchStrs, patterns);
-        // 所有匹配结果都为null，则失败
-        if (stringMatcherMap.entrySet().stream().allMatch(m -> m.getValue() == null)) {
-            assert flag;
-            return;
+        return flag;
+    }
+
+    private boolean partEquals(String str1, String str2){
+        if (StringUtils.isEmpty(str1) || StringUtils.isEmpty(str2)){
+            return false;
         }
-        executeEl(matchResultDTO.getMatcher(), matchResultDTO.getPattern());
-        for (Map.Entry<String, MatchResultDTO> stringMatcherEntry : stringMatcherMap.entrySet()) {
-            if (stringMatcherEntry.getValue() != null) {
-                MatchResultDTO matchResult = stringMatcherEntry.getValue();
-                Matcher match = matchResult.getMatcher();
-                RegxPatternDTO pattern = matchResult.getPattern();
-                executeEl(match, pattern);
+        if ("##".equals(str1) || "##".equals(str2)){
+            return true;
+        }
+        char[] chars1 = str1.toCharArray();
+        char[] chars2 = str2.toCharArray();
+        if (chars1.length != chars2.length){
+            return false;
+        }
+        boolean flag = true;
+        for (int i = 0; i < chars1.length; i++) {
+            flag = flag && charEquals(chars1[i], chars2[i]);
+        }
+        return flag;
+    }
+
+    private boolean charEquals(char char1, char char2){
+        if (char1 == 's'){
+            if (char2 == '粒' || char2 == '片' || char2 == '丸'){
+                return true;
             }
         }
+        if (char2 == 's'){
+            if (char1 == '粒' || char1 == '片' || char1 == '丸'){
+                return true;
+            }
+        }
+        return char1 == char2;
     }
 
     /**
@@ -94,7 +235,7 @@ public class RegxTest {
         if (StringUtils.isEmpty(group)){
             return "";
         }
-        if (NumberUtils.isDigits(group)){
+        if (NumberUtils.isParsable(group)){
             return new BigDecimal(group).setScale(2, RoundingMode.HALF_UP);
         }
         // 替换部分规定字符
@@ -109,18 +250,24 @@ public class RegxTest {
     /**
      * 执行el语句合并
      *
-     * @param match
-     * @param pattern
+     * @param match 表达式
+     * @param elExpression 表达式
      * @return
      */
-    private Object executeEl(Matcher match, RegxPatternDTO pattern){
+    private Object executeEl(Matcher match, String elExpression){
+        if (StringUtils.isEmpty(elExpression)){
+            return "";
+        }
         // 提取参数
         Map<String,Object> env = new HashMap<>();
+        log.info("==========================运算参数开始插入======================");
         for (int i = 1; i <= match.groupCount(); i++) {
             env.put("a" + i, convertDigits(match.group(i)));
+            log.info("a{}：{}", i, convertDigits(match.group(i)));
         }
-        log.info("当前运算表达式：{}", pattern.getElExpression());
-        Object res = AviatorExecuteEl(pattern.getElExpression(), env);
+        log.info("==========================运算参数插入结束======================");
+        log.info("当前运算表达式：{}", elExpression);
+        Object res = AviatorExecuteEl(elExpression, env);
         log.info(match.group(0) + "=>" + res.toString());
         return res;
     }
@@ -132,14 +279,14 @@ public class RegxTest {
      * @param patterns 正则表达式list
      * @return 返回值定义：key：target，value：匹配到的matcher
      */
-    private Map<String, MatchResultDTO> batchMatchBatch(List<String> targets, List<RegxPatternDTO> patterns) {
-        Map<String, MatchResultDTO> matcherMap = new LinkedHashMap<>();
+    private Map<Integer, MatchResultDTO> batchMatchBatch(List<RegxSpecDTO> targets, List<RegxPatternDTO> patterns) {
+        Map<Integer, MatchResultDTO> matcherMap = new LinkedHashMap<>();
 
         if (CollectionUtils.isEmpty(targets) || CollectionUtils.isEmpty(patterns)) {
             return matcherMap;
         }
-        for (String target : targets) {
-            matcherMap.put(target, singleMatchBatch(target, patterns));
+        for (RegxSpecDTO target : targets) {
+            matcherMap.put(target.getId(), singleMatchBatch(target.getSpec(), patterns));
         }
         return matcherMap;
     }
@@ -188,11 +335,12 @@ public class RegxTest {
                         .index(1)
                         .pattern("^(\\d+(\\.\\d+)?)(mg|g|MG|G)\\*([\\d]+)(s|S|片|粒|丸)(/(瓶|盒))?$")
                         .elExpression("'#{a3==\"g\"?a1*1000:a1}' + '#{a3==\"g\"?\"mg\":a3}*#{a4}#{a5}|' + '##'")
+                        .packageUnitElExpress("'#{a7}'")
                         .build(),
                 RegxPatternDTO.builder()
                         .index(2)
                         .pattern("^(\\d+(\\.\\d+)?)(mg|g|MG|G)\\*([\\d]+)(s|S|片|粒|丸)(/(板))?\\*([\\d]+)(板)$")
-                            .elExpression("'#{a3==\"g\"?a1*1000:a1}' + '#{a3==\"g\"?\"mg\":a3}*#{setScale(a4*a8,2)}#{a5}|#{a8}#{a9}'")
+                        .elExpression("'#{a3==\"g\"?a1*1000:a1}' + '#{a3==\"g\"?\"mg\":a3}*#{setScale(a4*a8,2)}#{a5}|#{a8}#{a9}'")
                         .build(),
                 RegxPatternDTO.builder()
                         .index(3)
@@ -203,6 +351,7 @@ public class RegxTest {
                         .index(4)
                         .pattern("^([\\d]+)(s|S|片|粒|丸)$")
                         .elExpression("'#{a1}#{a2}|' + '##'")
+                        .packageUnitElExpress("'#{a4}'")
                         .build(),
                 RegxPatternDTO.builder()
                         .index(5)
@@ -218,6 +367,7 @@ public class RegxTest {
                         .index(7)
                         .pattern("^(\\d+(\\.\\d+)?)(ml|ML|g|G)(/(盒|袋|瓶|支|罐))?$")
                         .elExpression("'#{a1}#{a3}'")
+                        .packageUnitElExpress("'#{a5}'")
                         .build()
         ));
     }

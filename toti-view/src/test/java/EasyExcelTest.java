@@ -2,6 +2,7 @@ import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
 import com.wx.lab.view.config.ExcelListener;
+import com.wx.lab.view.dto.PresentSpecDTO;
 import com.wx.lab.view.entity.SingleCustomerProductVO;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
@@ -25,6 +26,10 @@ import java.util.List;
 public class EasyExcelTest {
 
 
+    private static void excute(List<SingleCustomerProductVO> p) {
+        System.out.println(p.size());
+    }
+
     /**
      * 最简单的读
      * <p>1. 创建excel对应的实体对象 参照{@link DemoData}
@@ -33,11 +38,9 @@ public class EasyExcelTest {
      */
     @Test
     public void simpleRead() {
-        String fileName = "D:\\客户商品导入模板.xlsx";
+        String fileName = "D:\\新品上报匹配只有规格不一致的明细-模板.xlsx";
         // 这里 需要指定读用哪个class去读，然后读取第一个sheet 文件流会自动关闭
-        EasyExcel.read(fileName, SingleCustomerProductVO.class, new ExcelListener<SingleCustomerProductVO>(p->{
-            System.out.println(p.size());
-        })).sheet().doRead();
+        EasyExcel.read(fileName, PresentSpecDTO.class, new ExcelListener<>(EasyExcelTest::excute)).sheet().doRead();
     }
 
     @Test

@@ -24,8 +24,13 @@ public class RegxPatternDTO {
     private String pattern;
 
     /**
-     * el表达式
+     * 规格el表达式
      */
     private String elExpression;
+
+    /**
+     * 包装单位el表达式
+     */
+    private String packageUnitElExpress;
 
 }
