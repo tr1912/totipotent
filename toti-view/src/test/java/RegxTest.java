@@ -231,19 +231,12 @@ public class RegxTest {
      * @return
      */
     private Object convertDigits(String group){
-        Map<String, String> productReplaceRuleMap = getProductReplaceRuleMap();
         if (StringUtils.isEmpty(group)){
             return "";
         }
         if (NumberUtils.isParsable(group)){
             return new BigDecimal(group).setScale(2, RoundingMode.HALF_UP);
         }
-        // 替换部分规定字符
-//        for (Map.Entry<String, String> entry : productReplaceRuleMap.entrySet()) {
-//            if (group.equals(entry.getKey())){
-//                group = group.replaceAll(entry.getKey(), entry.getValue());
-//            }
-//        }
         return group.toLowerCase(Locale.ROOT);
     }
 
