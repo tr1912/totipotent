@@ -20,6 +20,7 @@
         <module>toti-dubbo-service</module>
         <module>toti-multy-src</module>
         <module>toti-job</module>
+        <module>toti-design-patterns</module>
     </modules>
 
     <properties>
@@ -67,6 +68,18 @@
                 <groupId>com.github.pagehelper</groupId>
                 <artifactId>pagehelper-spring-boot-starter</artifactId>
                 <version>${pagehelper.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-web</artifactId>
+                <version>${spring.boot.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-freemarker</artifactId>
+                <version>${spring.boot.version}</version>
             </dependency>
 
             <dependency>

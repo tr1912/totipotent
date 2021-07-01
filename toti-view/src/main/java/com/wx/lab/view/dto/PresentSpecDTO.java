@@ -30,7 +30,7 @@ public class PresentSpecDTO {
     @ExcelProperty(value = "m通用名")
     private String middleGeneralName;
 
-    @ExcelProperty(value = "m生产厂家")
+    @ExcelProperty(value = "生产厂家")
     private String manufacture;
 
     @ExcelProperty(value = "m生产厂家")
@@ -59,4 +59,10 @@ public class PresentSpecDTO {
 
     @ExcelProperty(value = "是否匹配成功")
     private Boolean isMatch = false;
+
+    @ExcelProperty(value = "使用的正则id")
+    private Integer matchRegx = 0;
+
+    @ExcelProperty(value = "m使用的正则id")
+    private Integer matchMiddleRegx = 0;
 }

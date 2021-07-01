@@ -100,7 +100,7 @@ public class RegxTest {
                 .map(m->{
                     RegxSpecDTO regxSpecDTO = new RegxSpecDTO();
                     regxSpecDTO.setId(m.getPresentId());
-                    regxSpecDTO.setSpec(m.getSpec());
+                    regxSpecDTO.setSpec(m.getSpec().replace(" ", ""));
                     return regxSpecDTO;
                 })
                 .collect(Collectors.toList());
@@ -135,6 +135,7 @@ public class RegxTest {
                         Matcher matcher = specMatchRes.getMatcher();
                         RegxPatternDTO pattern = specMatchRes.getPattern();
                         Object spinSpec = executeEl(matcher, pattern.getElExpression());
+                        specDTO.setMatchRegx(pattern.getIndex());
                         if (!org.springframework.util.StringUtils.isEmpty(spinSpec)){
                             specDTO.setMatchSpec(spinSpec.toString());
                         }
@@ -148,6 +149,7 @@ public class RegxTest {
                         Matcher matcher = middleSpecMatchRes.getMatcher();
                         RegxPatternDTO pattern = middleSpecMatchRes.getPattern();
                         Object spinSpec = executeEl(matcher, pattern.getElExpression());
+                        specDTO.setMatchMiddleRegx(pattern.getIndex());
                         if (!org.springframework.util.StringUtils.isEmpty(spinSpec)){
                             specDTO.setMatchMiddleSpec(spinSpec.toString());
                         }
@@ -212,12 +214,12 @@ public class RegxTest {
 
     private boolean charEquals(char char1, char char2){
         if (char1 == 's'){
-            if (char2 == '粒' || char2 == '片' || char2 == '丸'){
+            if (char2 == '粒' || char2 == '片' || char2 == '丸' || char2 == '枚'){
                 return true;
             }
         }
         if (char2 == 's'){
-            if (char1 == '粒' || char1 == '片' || char1 == '丸'){
+            if (char1 == '粒' || char1 == '片' || char1 == '丸' || char1 == '枚'){
                 return true;
             }
         }
@@ -310,6 +312,9 @@ public class RegxTest {
         }
         // 保证唯一匹配
         if (CollectionUtils.isEmpty(matcherList) || matcherList.size() > 1) {
+            if (matcherList.size()>1){
+                log.info("匹配到了多个regx");
+            }
             return null;
         } else {
             return matcherList.get(0);
@@ -326,34 +331,37 @@ public class RegxTest {
         return new ArrayList<>(Arrays.asList(
                 RegxPatternDTO.builder()
                         .index(1)
-                        .pattern("^(\\d+(\\.\\d+)?)(mg|g|MG|G)\\*([\\d]+)(s|S|片|粒|丸)(/(瓶|盒))?$")
+                        .pattern("^(\\d+(\\.\\d+)?)(mg|g|MG|G)\\*([\\d]+)(s|S|片|粒|丸|枚|袋)(/(瓶|盒))?$")
                         .elExpression("'#{a3==\"g\"?a1*1000:a1}' + '#{a3==\"g\"?\"mg\":a3}*#{a4}#{a5}|' + '##'")
                         .packageUnitElExpress("'#{a7}'")
                         .build(),
                 RegxPatternDTO.builder()
                         .index(2)
-                        .pattern("^(\\d+(\\.\\d+)?)(mg|g|MG|G)\\*([\\d]+)(s|S|片|粒|丸)(/(板))?\\*([\\d]+)(板)$")
+                        .pattern("^(\\d+(\\.\\d+)?)(mg|g|MG|G)\\*([\\d]+)(s|S|片|粒|丸|枚|袋)(/(板))?\\*([\\d]+)(板)(/(盒|小盒|瓶|板|包))?$")
                         .elExpression("'#{a3==\"g\"?a1*1000:a1}' + '#{a3==\"g\"?\"mg\":a3}*#{setScale(a4*a8,2)}#{a5}|#{a8}#{a9}'")
+                        .packageUnitElExpress("'#{a11}'")
                         .build(),
                 RegxPatternDTO.builder()
                         .index(3)
-                        .pattern("^(\\d+(\\.\\d+)?)(mg|g|MG|G)\\*([\\d]+)(s|S|片|粒|丸)(/(袋))?\\*([\\d]+)(袋)$")
+                        .pattern("^(\\d+(\\.\\d+)?)(mg|g|MG|G)\\*([\\d]+)(s|S|片|粒|丸|枚|袋)(/(袋))?\\*([\\d]+)(袋)(/(盒|小盒|瓶|板|包))?$")
                         .elExpression("'#{a3==\"g\"?a1*1000:a1}' + '#{a3==\"g\"?\"mg\":a3}*#{setScale(a4*a8,2)}#{a5}|#{a8}#{a9}'")
+                        .packageUnitElExpress("'#{a11}'")
                         .build(),
                 RegxPatternDTO.builder()
                         .index(4)
-                        .pattern("^([\\d]+)(s|S|片|粒|丸)$")
-                        .elExpression("'#{a1}#{a2}|' + '##'")
+                        .pattern("^([\\d]+)(s|S|片|粒|丸|枚|袋)(/(瓶|盒))?$")
+                        .elExpression("'#{a1}#{a2}|'+'##'")
                         .packageUnitElExpress("'#{a4}'")
                         .build(),
                 RegxPatternDTO.builder()
                         .index(5)
-                        .pattern("^([\\d]+)(s|S|片|粒|丸)\\*([\\d]+)(板)$")
+                        .pattern("^([\\d]+)(s|S|片|粒|丸|枚|袋)\\*([\\d]+)(板)(/(盒|小盒|瓶|板|包))?$")
                         .elExpression("'#{setScale(a1*a3,2)}#{a2}|#{a3}#{a4}'")
+                        .packageUnitElExpress("'#{a6}'")
                         .build(),
                 RegxPatternDTO.builder()
                         .index(6)
-                        .pattern("^([\\d]+)(s|S|片|粒|丸)\\*([\\d]+)(袋)$")
+                        .pattern("^([\\d]+)(s|S|片|粒|丸|枚|袋)\\*([\\d]+)(袋)$")
                         .elExpression("'#{setScale(a1*a3, 2)}#{a2}|#{a3}#{a4}'")
                         .build(),
                 RegxPatternDTO.builder()
@@ -361,7 +369,18 @@ public class RegxTest {
                         .pattern("^(\\d+(\\.\\d+)?)(ml|ML|g|G)(/(盒|袋|瓶|支|罐))?$")
                         .elExpression("'#{a1}#{a3}'")
                         .packageUnitElExpress("'#{a5}'")
+                        .build(),
+                RegxPatternDTO.builder()
+                        .index(8)
+                        .pattern("^(\\d+(\\.\\d+)?)(ml|ML|mg|g|MG|G)\\:(\\d+(\\.\\d+)?)(mg|g|MG|G)\\*([\\d]+)(支|瓶)(/(盒|小盒|板|包))?$")
+                        .elExpression("'#{a3==\"g\"?a1*1000:a1}' + '#{a3==\"g\"?\"mg\":a3}:'+'#{a6==\"g\"?a4*1000:a4}'+'#{a6==\"g\"?\"mg\":a6}*#{a7}#{a8}'")
+                        .packageUnitElExpress("'#{a10}'")
                         .build()
+//                RegxPatternDTO.builder()
+//                        .index(9)
+//                        .pattern("^(\\d+(\\.\\d+)?)(ml|ML|g|G)\\*(\\d+(\\.\\d+)?)(盒|袋|瓶|支|罐)?\\s*(\\(*([\\u4E00-\\u9FA5]+)\\)*)$")
+//                        .elExpression("'#{a3==\"g\"?a1*1000:a1}' + '#{a3==\"g\"?\"mg\":a3}*#{a4}#{a6}|#{8}'")
+//                        .build()
         ));
     }
 
