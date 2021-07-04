@@ -12,6 +12,9 @@ import lombok.Data;
 @Data
 public class ProductMatchSourceDTO {
 
+    @ExcelProperty(value = "唯一标识")
+    private String uniqueCode;
+
     @ExcelProperty(value = "商品大类")
     private Integer spuCategory;
 
@@ -29,4 +32,8 @@ public class ProductMatchSourceDTO {
 
     @ExcelProperty(value = "规格")
     private String spec;
+
+    @ExcelProperty(value = "标准库id")
+    private String productId;
+
 }

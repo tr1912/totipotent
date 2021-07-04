@@ -86,7 +86,7 @@ public class HttpClientUtil {
             throws Exception {
         CloseableHttpClient httpClient = HttpClients.createDefault();
         HttpPost httpPost = new HttpPost(url);
-        RequestConfig requestConfig = RequestConfig.custom().setSocketTimeout(5000).setConnectTimeout(5000).build();
+        RequestConfig requestConfig = RequestConfig.custom().setSocketTimeout(10000).setConnectTimeout(10000).build();
         httpPost.setConfig(requestConfig);
         httpPost.setHeader("Content-Type", "application/json");
         if(headers != null && !headers.isEmpty()){
@@ -104,7 +104,7 @@ public class HttpClientUtil {
                 result = EntityUtils.toString(entity, DEFAULT_ENCODING);
             }
         } catch (Exception e) {
-            logger.info("http请求异常{}",e);
+            logger.error("http请求异常",e);
             throw new Exception(e);
         } finally {
             // 关闭连接，释放资源
