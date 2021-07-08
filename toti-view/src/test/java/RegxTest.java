@@ -11,6 +11,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.junit.Test;
 import org.springframework.beans.BeanUtils;
+import util.CharUtil;
 import util.ElAnalyseUtil;
 import util.RegxMatchUtil;
 import util.SpecStrMatchUtil;
@@ -89,42 +90,86 @@ public class RegxTest {
         }
         List<PresentSpecDTO> exportList = importList.stream()
                 .map(presentItem->{
-                    PresentSpecDTO specDTO = new PresentSpecDTO();
-                    BeanUtils.copyProperties(presentItem, specDTO);
-                    specDTO.setMatchMiddleSpec("");
-                    specDTO.setMatchSpec("");
-                    specDTO.setMatchPackageUnit("");
                     MatchResultDTO specMatchRes = stringMatchSpecMap.get(presentItem.getPresentId());
-                    if (specMatchRes != null){
-                        Matcher matcher = specMatchRes.getMatcher();
-                        RegxPatternDTO pattern = specMatchRes.getPattern();
-                        Object spinSpec = ElAnalyseUtil.executeEl(matcher, pattern.getElExpression());
-                        specDTO.setMatchRegx(pattern.getIndex());
-                        if (!org.springframework.util.StringUtils.isEmpty(spinSpec)){
-                            specDTO.setMatchSpec(spinSpec.toString());
-                        }
-                        Object spinPackageUnit = ElAnalyseUtil.executeEl(matcher, pattern.getPackageUnitElExpress());
-                        if (!org.springframework.util.StringUtils.isEmpty(spinPackageUnit)){
-                            specDTO.setMatchPackageUnit(spinPackageUnit.toString());
-                        }
-                    }
                     MatchResultDTO middleSpecMatchRes = stringMatchMSpecMap.get(presentItem.getPresentId());
-                    if (middleSpecMatchRes != null){
-                        Matcher matcher = middleSpecMatchRes.getMatcher();
-                        RegxPatternDTO pattern = middleSpecMatchRes.getPattern();
-                        Object spinSpec = ElAnalyseUtil.executeEl(matcher, pattern.getElExpression());
-                        specDTO.setMatchMiddleRegx(pattern.getIndex());
-                        if (!org.springframework.util.StringUtils.isEmpty(spinSpec)){
-                            specDTO.setMatchMiddleSpec(spinSpec.toString());
-                        }
+                    PresentSpecDTO specDTO = specMatch(presentItem, specMatchRes, middleSpecMatchRes);
+                    if (!specDTO.getIsMatch()){
+                        // 如果规格匹配没有成功
+                        thirdNameMatch(specDTO, presentItem);
                     }
-                    specDTO.setIsMatch(SpecStrMatchUtil.matchSpec(specDTO.getMatchSpec(), specDTO.getMatchMiddleSpec()));
                     return specDTO;
                 })
                 .collect(Collectors.toList());
 
         String outFileName = "D:\\新品上报匹配只有规格不一致的明细-匹配结果.xlsx";
         EasyExcelFactory.write(outFileName, PresentSpecDTO.class).sheet("Sheet1").doWrite(exportList);
+    }
+
+    /**
+     * 剂型包衣匹配方法
+     *
+     * @param specDTO
+     * @param presentItem
+     */
+    private void thirdNameMatch(PresentSpecDTO specDTO, PresentSpecDTO presentItem){
+        // 业务通用名
+        String generalName = CharUtil.regularStr(presentItem.getGeneralName());
+        // 业务规格
+        String spec = CharUtil.regularStr(presentItem.getSpec().replace(" ", ""));
+        // 中台规格
+        String matchMiddleSpec = CharUtil.regularStr(presentItem.getMatchMiddleSpec());
+
+        String attachGeneralName = RegxMatchUtil.regxGetBucket(generalName);
+        if (StringUtils.isEmpty(attachGeneralName)){
+            attachGeneralName = CharUtil.getLastAttachBySpace(generalName);
+        }
+        String attachSpec = RegxMatchUtil.regxGetBucket(spec);
+
+    }
+
+
+    /**
+     * 规格匹配
+     *
+     * @param presentItem 当前匹配明细
+     * @param specMatchRes 规格匹配结果
+     * @param middleSpecMatchRes 中台规格匹配结果
+     * @return
+     */
+    private PresentSpecDTO specMatch(PresentSpecDTO presentItem,
+                                     MatchResultDTO specMatchRes,
+                                     MatchResultDTO middleSpecMatchRes){
+        PresentSpecDTO specDTO = new PresentSpecDTO();
+        BeanUtils.copyProperties(presentItem, specDTO);
+        specDTO.setMatchMiddleSpec("");
+        specDTO.setMatchSpec("");
+        specDTO.setMatchPackageUnit("");
+
+        if (specMatchRes != null){
+            Matcher matcher = specMatchRes.getMatcher();
+            RegxPatternDTO pattern = specMatchRes.getPattern();
+            Object spinSpec = ElAnalyseUtil.executeEl(matcher, pattern.getElExpression());
+            specDTO.setMatchRegx(pattern.getIndex());
+            if (!org.springframework.util.StringUtils.isEmpty(spinSpec)){
+                specDTO.setMatchSpec(spinSpec.toString());
+            }
+            Object spinPackageUnit = ElAnalyseUtil.executeEl(matcher, pattern.getPackageUnitElExpress());
+            if (!org.springframework.util.StringUtils.isEmpty(spinPackageUnit)){
+                specDTO.setMatchPackageUnit(spinPackageUnit.toString());
+            }
+        }
+
+        if (middleSpecMatchRes != null){
+            Matcher matcher = middleSpecMatchRes.getMatcher();
+            RegxPatternDTO pattern = middleSpecMatchRes.getPattern();
+            Object spinSpec = ElAnalyseUtil.executeEl(matcher, pattern.getElExpression());
+            specDTO.setMatchMiddleRegx(pattern.getIndex());
+            if (!org.springframework.util.StringUtils.isEmpty(spinSpec)){
+                specDTO.setMatchMiddleSpec(spinSpec.toString());
+            }
+        }
+        specDTO.setIsMatch(SpecStrMatchUtil.matchSpec(specDTO.getMatchSpec(), specDTO.getMatchMiddleSpec()));
+        return specDTO;
     }
 
     /**
@@ -221,7 +266,7 @@ public class RegxTest {
                         .build()
 //                ,RegxPatternDTO.builder()
 //                        .index(813)
-//                        .pattern("^(\\d+(\\.\\d+)?)(mg|g|MG|G)\\:(\\d+(\\.\\d+)?)(mg|g|MG|G)(/(盒|小盒|包|袋))?$")
+//                        .pattern("(\\s+|\\(+)(.+)(\\s*|\\)+)")
 //                        .elExpression("'#{a3==\"g\"?a1*1000:a1}' + '#{a3==\"g\"?\"mg\":a3}:'+'#{a6==\"g\"?a4*1000:a4}'+'#{a6==\"g\"?\"mg\":a6}|##'")
 //                        .packageUnitElExpress("'#{a8}'")
 //                        .build()
@@ -254,6 +299,11 @@ public class RegxTest {
                         .pattern("^(\\d+(\\.\\d+)?)(mm|cm|MM|CM)\\*(\\d+(\\.\\d+)?)(mm|cm|MM|CM)\\*([\\d]+)(片|贴)\\*([\\d]+)(袋)(/(盒|小盒|包))?$")
                         .elExpression("'#{a3==\"cm\"?a1*10:a1}' + '#{a3==\"cm\"?\"mm\":a3}*' + '#{a6==\"cm\"?a4*10:a4}' + '#{a6==\"cm\"?\"mm\":a6}*#{setScale(a7*a9, 2)}#{a8}|#{a9}#{a10}'")
                         .packageUnitElExpress("'#{a12}'")
+                        .build()
+                ,RegxPatternDTO.builder()
+                        .index(13)
+                        .pattern("^(.+)(ug|μg)(.+)$")
+                        .elExpression("'#{a1}μg#{a3}'")
                         .build()
         ));
     }

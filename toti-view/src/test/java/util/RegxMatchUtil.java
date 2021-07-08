@@ -5,6 +5,7 @@ import com.wx.lab.view.dto.MatchResultDTO;
 import com.wx.lab.view.dto.RegxPatternDTO;
 import com.wx.lab.view.dto.RegxSpecDTO;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -80,6 +81,31 @@ public class RegxMatchUtil {
     }
 
     /**
+     * 通过正则匹配括号，拿到最后一个括号的值
+     *
+     * @param source
+     * @return
+     */
+    public static String regxGetBucket(String source){
+        if (StringUtils.isEmpty(source)){
+            return "";
+        }
+        String pattern = "\\((.+?)\\)";
+        Matcher matcher = regxMatch(source, pattern);
+        if (!matcher.find()){
+            return "";
+        }
+        int matcher_start = 0;
+        // 获取最后一个括号中的内容
+        String res = "";
+        while (matcher.find(matcher_start)){
+            res = matcher.group(0);
+            matcher_start = matcher.end();
+        }
+        return res;
+    }
+
+    /**
      * 正则匹配方法
      *
      * @param target  目标值
@@ -89,10 +115,16 @@ public class RegxMatchUtil {
     private static Matcher regxMatch(String target, String pattern) {
         Pattern r = Pattern.compile(pattern, Pattern.MULTILINE);
         Matcher m = r.matcher(target);
-        System.out.println(m.matches());
         if (m.matches()) {
             for (int i = 0; i <= m.groupCount(); i++) {
                 log.info(m.group(i));
+            }
+        }
+        if (m.find()){
+            int matcher_start = 0;
+            while (m.find(matcher_start)){
+                log.info(m.group(0));
+                matcher_start = m.end();
             }
         }
         return m;
@@ -100,10 +132,12 @@ public class RegxMatchUtil {
 
     public static void main(String args[]) {
         String str = "60片 (薄膜衣片)(是副科级)";
-        String pattern = "(\\s+|\\(+)(.+)(\\s*|\\)+)";
-
-        Pattern r = Pattern.compile(pattern);
-        Matcher m = r.matcher(str);
-        System.out.println(m.matches());
+        RegxPatternDTO build = RegxPatternDTO.builder()
+                .index(1)
+                .pattern("\\((.+?)\\)")
+                .elExpression("")
+                .build();
+        Matcher m = regxMatch(str, build.getPattern());
+        System.out.println(m.find());
     }
 }
