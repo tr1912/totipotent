@@ -69,14 +69,25 @@ public class SpecStrMatchUtil {
      * @return 返回是否成功
      */
     private static boolean charEquals(char char1, char char2) {
-        // "s"与"片|粒|丸"等价
+        // "s"与"片|粒|丸|枚|t"等价
         if (char1 == 's') {
-            if (char2 == '粒' || char2 == '片' || char2 == '丸' || char2 == '枚') {
+            if (char2 == '粒' || char2 == '片' || char2 == '丸' || char2 == '枚' || char2 == 't') {
                 return true;
             }
         }
         if (char2 == 's') {
-            if (char1 == '粒' || char1 == '片' || char1 == '丸' || char1 == '枚') {
+            if (char1 == '粒' || char1 == '片' || char1 == '丸' || char1 == '枚' || char1 == 't') {
+                return true;
+            }
+        }
+        // t 与 片等价
+        if (char1 == 't'){
+            if (char2 == '片'){
+                return true;
+            }
+        }
+        if (char2 == 't'){
+            if (char1 == '片'){
                 return true;
             }
         }
