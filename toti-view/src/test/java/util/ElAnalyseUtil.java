@@ -10,8 +10,6 @@ import com.googlecode.aviator.runtime.type.AviatorString;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.junit.Before;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
@@ -66,7 +64,7 @@ public class ElAnalyseUtil {
             return "";
         }
         if (NumberUtils.isParsable(group)){
-            return new BigDecimal(group).setScale(2, RoundingMode.HALF_UP);
+            return new BigDecimal(group).setScale(6, RoundingMode.HALF_UP);
         }
         return group.toLowerCase(Locale.ROOT);
     }
