@@ -75,7 +75,7 @@ public class ProductMatchTest {
             productVo.setSource(13);
             productVo.setProductList(Collections.singletonList(matchProduct));
             HttpClientUtil client = new HttpClientUtil();
-            String url = "https://interface-new.stage.ybm100.com/me/newsku/getGeneralMatchProduct";
+            String url = "https://interface.ybm100.com/me/newsku/getGeneralMatchProduct";
             String jsonParams = JSON.toJSONString(productVo);
             try {
                 long start = System.currentTimeMillis();
