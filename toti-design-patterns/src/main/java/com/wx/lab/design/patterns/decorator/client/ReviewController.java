@@ -1,9 +1,9 @@
-package com.wx.lab.design.patterns.client;
+package com.wx.lab.design.patterns.decorator.client;
 
-import com.wx.lab.design.patterns.product.ApprovalProcessEnum;
-import com.wx.lab.design.patterns.product.ProductReviewDTO;
-import com.wx.lab.design.patterns.product.review.Review;
-import com.wx.lab.design.patterns.product.review.ReviewFactory;
+import com.wx.lab.design.patterns.decorator.product.ApprovalProcessEnum;
+import com.wx.lab.design.patterns.decorator.product.ProductReviewDTO;
+import com.wx.lab.design.patterns.decorator.product.review.Review;
+import com.wx.lab.design.patterns.decorator.product.review.ReviewFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;

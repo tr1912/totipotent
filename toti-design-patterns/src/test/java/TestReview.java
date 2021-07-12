@@ -1,6 +1,6 @@
-import com.wx.lab.design.patterns.product.ApprovalProcessEnum;
-import com.wx.lab.design.patterns.product.ProductReviewDTO;
-import com.wx.lab.design.patterns.product.review.*;
+import com.wx.lab.design.patterns.decorator.product.ApprovalProcessEnum;
+import com.wx.lab.design.patterns.decorator.product.ProductReviewDTO;
+import com.wx.lab.design.patterns.decorator.product.review.*;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;

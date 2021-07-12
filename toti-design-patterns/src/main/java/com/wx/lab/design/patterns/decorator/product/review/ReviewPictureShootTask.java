@@ -1,7 +1,7 @@
-package com.wx.lab.design.patterns.product.review;
+package com.wx.lab.design.patterns.decorator.product.review;
 
-import com.wx.lab.design.patterns.product.ApprovalProcessEnum;
-import com.wx.lab.design.patterns.product.PictureReviewDTO;
+import com.wx.lab.design.patterns.decorator.product.ApprovalProcessEnum;
+import com.wx.lab.design.patterns.decorator.product.PictureReviewDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

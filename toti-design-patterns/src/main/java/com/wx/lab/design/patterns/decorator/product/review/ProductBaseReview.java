@@ -1,7 +1,7 @@
-package com.wx.lab.design.patterns.product.review;
+package com.wx.lab.design.patterns.decorator.product.review;
 
-import com.wx.lab.design.patterns.product.ApprovalProcessEnum;
-import com.wx.lab.design.patterns.product.ProductReviewDTO;
+import com.wx.lab.design.patterns.decorator.product.ApprovalProcessEnum;
+import com.wx.lab.design.patterns.decorator.product.ProductReviewDTO;
 import lombok.extern.slf4j.Slf4j;
 
 /**

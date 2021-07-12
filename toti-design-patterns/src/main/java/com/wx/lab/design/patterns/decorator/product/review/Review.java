@@ -1,7 +1,7 @@
-package com.wx.lab.design.patterns.product.review;
+package com.wx.lab.design.patterns.decorator.product.review;
 
-import com.wx.lab.design.patterns.product.ApprovalProcessEnum;
-import com.wx.lab.design.patterns.product.ReviewInfoDTO;
+import com.wx.lab.design.patterns.decorator.product.ApprovalProcessEnum;
+import com.wx.lab.design.patterns.decorator.product.ReviewInfoDTO;
 
 /**
  * @author wangxiao

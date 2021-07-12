@@ -1,10 +1,7 @@
-package com.wx.lab.design.patterns.product;
+package com.wx.lab.design.patterns.decorator.product;
 
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * ApprovalProcessEnum
@@ -111,12 +108,12 @@ public enum ApprovalProcessEnum {
      */
     public static List<Map<String, String>> getAllProcess() {
         List<Map<String, String>> result = new ArrayList<>();
-        for (ApprovalProcessEnum value : ApprovalProcessEnum.values()) {
+        Arrays.stream(ApprovalProcessEnum.values()).forEach(value -> {
             Map<String, String> item = new HashMap<>();
             item.put("key", String.valueOf(value.getId()));
             item.put("value", value.getName());
             result.add(item);
-        }
+        });
         return result;
     }
 }

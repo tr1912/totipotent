@@ -1,4 +1,4 @@
-package com.wx.lab.design.patterns.product;
+package com.wx.lab.design.patterns.decorator.product;
 
 import lombok.Data;
 
