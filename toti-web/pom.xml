@@ -13,7 +13,7 @@
     <artifactId>toti-web</artifactId>
 
     <properties>
-        <mysql.connector.version>8.0.18</mysql.connector.version>
+        <mysql.connector.version>8.0.28</mysql.connector.version>
     </properties>
 
     <dependencies>
